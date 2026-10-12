@@ -1,0 +1,27 @@
+{% load static %}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Учёт склада{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Учёт склада</div>
+    <nav class="tabs">
+      <a href="{% url 'stock' %}" class="tab {% block tab_stock %}{% endblock %}">Склад</a>
+      <span class="tab disabled" title="Следующий этап">Продажи</span>
+      <span class="tab disabled" title="Следующий этап">Резервы</span>
+    </nav>
+    <div class="user">
+      {{ request.user.get_full_name|default:request.user.username }}
+      {% if request.user.is_staff %}<a href="{% url 'admin:index' %}">Админка</a>{% endif %}
+      <form method="post" action="{% url 'admin:logout' %}" class="inline">{% csrf_token %}<button class="link">Выйти</button></form>
+    </div>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
