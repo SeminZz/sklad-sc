@@ -5,30 +5,14 @@
   const form = document.getElementById('filters');
   const brandSel = document.getElementById('f-brand');
   const modelSel = document.getElementById('f-model');
-  const carModels = JSON.parse(document.getElementById('car-models').textContent);
   const groupChips = document.getElementById('group-chips');
   const groupAdd = document.getElementById('group-add');
   const groupPanel = document.getElementById('group-panel');
 
   let groupFields = [];
 
-  // ---------- Модели зависят от выбранной марки ----------
-  function fillModels() {
-    const brand = brandSel.value;
-    const current = modelSel.value;
-    modelSel.innerHTML = '<option value="">Все</option>';
-    carModels
-      .filter(m => !brand || String(m.brand_id) === brand)
-      .forEach(m => {
-        const o = document.createElement('option');
-        o.value = m.id;
-        o.textContent = m.name;
-        modelSel.appendChild(o);
-      });
-    if ([...modelSel.options].some(o => o.value === current)) modelSel.value = current;
-  }
-  brandSel.addEventListener('change', fillModels);
-  fillModels();
+  // ---------- Модель доступна только после выбора марки ----------
+  const brandModel = linkBrandModel(brandSel, modelSel, STOCK.modelsUrl);
 
   // ---------- Таблица ----------
   const money = {thousand: ' ', decimal: ',', symbol: '', precision: 2};
@@ -41,6 +25,7 @@
     {title: 'Категория', field: 'category', width: 140, headerFilter: 'input'},
     {title: 'Марка', field: 'brand', width: 120, headerFilter: 'input'},
     {title: 'Модель', field: 'car_model', width: 135, headerFilter: 'input'},
+    {title: 'Поколение', field: 'generation', width: 105, headerFilter: 'input'},
     {title: 'Год', field: 'year', width: 90, hozAlign: 'right', sorter: 'number', headerFilter: 'input'},
     {title: 'ДВС', field: 'engine', width: 105, headerFilter: 'input'},
     {title: 'OEM', field: 'oem', width: 130, headerFilter: 'input'},
@@ -192,7 +177,7 @@
   document.getElementById('btn-search').addEventListener('click', load);
   document.getElementById('btn-clear').addEventListener('click', () => {
     form.reset();
-    fillModels();
+    brandModel.refresh('');
     table.clearHeaderFilter();
     load();
     document.getElementById('f-q').focus();

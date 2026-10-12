@@ -14,8 +14,8 @@ class PartModelTests(TestCase):
         self.wh = Warehouse.objects.create(name='Склад', code='S1')
         self.other_wh = Warehouse.objects.create(name='Другой', code='S2')
         self.cat, _ = Category.objects.get_or_create(name='Генератор')
-        self.ford = Brand.objects.create(name='Ford')
-        self.opel = Brand.objects.create(name='Opel')
+        self.ford, _ = Brand.objects.get_or_create(name='Ford')
+        self.opel, _ = Brand.objects.get_or_create(name='Opel')
         self.focus = CarModel.objects.create(brand=self.ford, name='Focus 2')
 
     def test_barcode_and_brand_filled_automatically(self):
@@ -94,3 +94,57 @@ class CategoriesLoadedTests(TestCase):
     def test_full_list_loaded_by_migration(self):
         self.assertGreaterEqual(Category.objects.count(), 809)
         self.assertTrue(Category.objects.filter(name='Фильтр паров топлива').exists())
+
+
+class BrandsModelsTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_superuser('admin', 'admin@example.com', 'x')
+        cls.ford = Brand.objects.get(name='Ford')
+        cls.opel = Brand.objects.get(name='Opel')
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_reference_loaded_by_migration(self):
+        self.assertGreaterEqual(Brand.objects.count(), 400)
+        self.assertGreaterEqual(CarModel.objects.count(), 4900)
+        focus = CarModel.objects.get(brand=self.ford, name='Focus')
+        self.assertEqual(focus.name_ru, 'Фокус')
+        self.assertTrue(self.ford.is_popular)
+        self.assertTrue(Brand.objects.filter(name='Lada (ВАЗ)').exists())
+
+    def test_models_api_returns_only_selected_brand(self):
+        data = self.client.get(reverse('models_api'), {'brand': self.ford.pk}).json()
+        ids = {m['id'] for m in data['models']}
+        self.assertEqual(ids, set(CarModel.objects.filter(brand=self.ford).values_list('id', flat=True)))
+        self.assertIn('Focus', {m['name'] for m in data['models']})
+        self.assertNotIn('Vectra', {m['name'] for m in data['models']})
+
+    def test_models_api_without_brand_is_empty(self):
+        self.assertEqual(self.client.get(reverse('models_api')).json(), {'models': []})
+
+    def test_admin_form_offers_only_models_of_brand(self):
+        from .admin import PartAdminForm
+        form = PartAdminForm()
+        self.assertEqual(form.fields['car_model'].queryset.count(), 0)  # марка не выбрана
+        form = PartAdminForm(data={'brand': str(self.ford.pk)})
+        qs = form.fields['car_model'].queryset
+        self.assertTrue(qs.exists())
+        self.assertFalse(qs.exclude(brand=self.ford).exists())
+
+    def test_admin_form_rejects_model_of_other_brand(self):
+        from .admin import PartAdminForm
+        wh = Warehouse.objects.create(name='Склад', code='S1')
+        vectra = CarModel.objects.get(brand=self.opel, name='Vectra')
+        form = PartAdminForm(data={
+            'brand': str(self.ford.pk), 'car_model': str(vectra.pk), 'category': Category.objects.first().pk,
+            'warehouse': wh.pk, 'status': 'accepted', 'condition': 'used_good',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('car_model', form.errors)
+
+    def test_admin_add_page_opens(self):
+        r = self.client.get(reverse('admin:parts_part_add'))
+        self.assertContains(r, 'Популярные')
+        self.assertContains(r, 'js/admin_part.js')

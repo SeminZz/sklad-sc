@@ -14,17 +14,48 @@ DEFAULT_LIMIT = 5000
 INACTIVE_STATUSES = [Part.Status.SOLD, Part.Status.WRITTEN_OFF]
 
 
+def brand_label(brand):
+    if brand.name_ru and brand.name_ru.lower() != brand.name.lower():
+        return f'{brand.name} ({brand.name_ru})'
+    return brand.name
+
+
+def brand_groups():
+    """Марки для выпадающих списков: сначала популярные, потом все остальные."""
+    brands = list(Brand.objects.all())
+    popular = [(b.pk, brand_label(b)) for b in brands if b.is_popular]
+    others = [(b.pk, brand_label(b)) for b in brands if not b.is_popular]
+    if not popular:
+        return [('', others)]
+    return [('Популярные', popular), ('Все марки', others)]
+
+
+@login_required
+def models_api(request):
+    """Модели одной марки — для списка «Модель», который зависит от выбранной марки."""
+    brand_id = _int(request.GET.get('brand'))
+    if not brand_id:
+        return JsonResponse({'models': []})
+    models = CarModel.objects.filter(brand_id=brand_id).order_by('name')
+    return JsonResponse({'models': [{
+        'id': m.pk,
+        'name': m.name,
+        'name_ru': m.name_ru,
+        'years': f"{m.year_from or ''}–{m.year_to or ''}" if (m.year_from or m.year_to) else '',
+    } for m in models]})
+
+
 @login_required
 def stock(request):
     context = {
         'categories': Category.objects.all(),
-        'brands': Brand.objects.all(),
-        'car_models': list(CarModel.objects.values('id', 'name', 'brand_id').order_by('name')),
+        'brand_groups': brand_groups(),
         'warehouses': Warehouse.objects.filter(is_active=True),
         'statuses': Part.Status.choices,
         'limits': LIMIT_CHOICES,
         'default_limit': DEFAULT_LIMIT,
         'admin_part_url': reverse('admin:parts_part_change', args=[0]),
+        'models_api_url': reverse('models_api'),
     }
     return render(request, 'parts/stock.html', context)
 
@@ -99,7 +130,7 @@ def stock_api(request):
 
     rows = qs.values(
         'id', 'barcode', 'year', 'engine_code', 'oem', 'condition', 'price', 'min_price', 'status',
-        'category__name', 'brand__name', 'car_model__name',
+        'category__name', 'brand__name', 'car_model__name', 'generation',
         'warehouse__name', 'warehouse__kind', 'cell__address', 'created_at',
     )[:limit]
 
@@ -112,6 +143,7 @@ def stock_api(request):
         'category': r['category__name'],
         'brand': r['brand__name'] or '',
         'car_model': r['car_model__name'] or '',
+        'generation': r['generation'],
         'year': r['year'],
         'engine': r['engine_code'],
         'oem': r['oem'],

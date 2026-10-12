@@ -24,17 +24,19 @@ POPULAR_CATEGORIES = [
     'Радиатор основной', 'Суппорт передний левый',
 ]
 
+# Модель берётся из справочника (cars.json), поколение пишется в деталь отдельно
 CARS = {
-    'Ford': ['Focus 2', 'Focus 3', 'Fiesta 5', 'Mondeo 4', 'Kuga'],
-    'Opel': ['Astra H', 'Vectra C', 'Zafira A', 'Zafira B', 'Insignia'],
-    'Volkswagen': ['Golf 3', 'Golf 5', 'Passat B6', 'Polo', 'Touran'],
-    'Toyota': ['Corolla E150', 'Camry XV40', 'RAV4', 'Avensis'],
-    'Renault': ['Scenic 2', 'Megane 2', 'Logan', 'Duster'],
-    'Mazda': ['Mazda 6 GG', 'Mazda 3 BK', 'Millenia', 'CX-7'],
-    'Hyundai': ['Sonata 5', 'Solaris', 'Tucson', 'Santa Fe'],
-    'Honda': ['Accord 5', 'Accord 7', 'Civic', 'CR-V'],
-    'Mitsubishi': ['Colt 6', 'Lancer 9', 'Outlander', 'Pajero 4'],
-    'BMW': ['3 E90', '5 E60', 'X5 E70'],
+    'Ford': [('Focus', 'II'), ('Focus', 'III'), ('Fiesta', 'V'), ('Mondeo', 'IV'), ('Kuga', 'I')],
+    'Opel': [('Astra', 'H'), ('Vectra', 'C'), ('Zafira', 'A'), ('Zafira', 'B'), ('Insignia', 'A')],
+    'Volkswagen': [('Golf', 'III'), ('Golf', 'V'), ('Passat', 'B6'), ('Polo', 'V'), ('Touran', 'I')],
+    'Toyota': [('Corolla', 'E150'), ('Camry', 'XV40'), ('RAV4', 'III'), ('Avensis', 'II')],
+    'Renault': [('Scenic', 'II'), ('Megane', 'II'), ('Logan', 'I'), ('Duster', 'I')],
+    'Mazda': [('6', 'GG'), ('3', 'BK'), ('Millenia', ''), ('CX-7', '')],
+    'Hyundai': [('Sonata', 'V'), ('Solaris', 'I'), ('Tucson', 'I'), ('Santa Fe', 'II')],
+    'Honda': [('Accord', 'V'), ('Accord', 'VII'), ('Civic', 'VIII'), ('CR-V', 'III')],
+    'Mitsubishi': [('Colt', 'VI'), ('Lancer', 'IX'), ('Outlander', 'II'), ('Pajero', 'IV')],
+    'BMW': [('3 серии', 'E90'), ('5 серии', 'E60'), ('X5', 'E70')],
+    'Lada (ВАЗ)': [('2107', ''), ('Priora', 'I'), ('Granta', 'I'), ('Kalina', 'II')],
 }
 ENGINES = ['N30', 'Z16XEP', 'Z18XER', 'Y22DTR', 'A16XER', 'CFNA', 'BSE', 'BKD', '1ZZ-FE', '2AZ-FE',
            'K4M', 'F4R', 'LF-17', 'G4FC', 'N47D20', 'M54B25', '4G15', '4B12', 'D4EA', 'QQDB']
@@ -82,11 +84,13 @@ class Command(BaseCommand):
             self.stderr.write('Справочник категорий пуст. Сначала выполните: python manage.py migrate')
             return
         popular = [c for c in all_categories if c.name in POPULAR_CATEGORIES] or all_categories
-        models = []
-        for brand_name, model_names in CARS.items():
+        models = []  # пары (модель, поколение)
+        for brand_name, items in CARS.items():
             brand, _ = Brand.objects.get_or_create(name=brand_name)
-            for m in model_names:
-                models.append(CarModel.objects.get_or_create(brand=brand, name=m)[0])
+            for model_name, generation in items:
+                model = (CarModel.objects.filter(brand=brand, name__iexact=model_name).first()
+                         or CarModel.objects.create(brand=brand, name=model_name))
+                models.append((model, generation))
 
         statuses = [s for s, _ in STATUS_WEIGHTS]
         weights = [w for _, w in STATUS_WEIGHTS]
@@ -98,12 +102,13 @@ class Command(BaseCommand):
         for i in range(n):
             status = rnd.choices(statuses, weights)[0]
             wh = sc if status in in_sc else rnd.choice(storage)
-            car = rnd.choice(models)
+            car, generation = rnd.choice(models)
             price = Decimal(rnd.randrange(1500, 60000, 50))
             Part.objects.create(
                 category=rnd.choice(popular if rnd.random() < 0.85 else all_categories),
                 brand_id=car.brand_id,
                 car_model=car,
+                generation=generation,
                 year=rnd.randint(1995, 2022),
                 engine_code=rnd.choice(ENGINES),
                 oem=f'{rnd.randint(100, 999)}{rnd.choice("ABCDEFGHJK")}{rnd.randint(10000, 99999)}',
