@@ -47,6 +47,10 @@
     columns: columns.map(c => ({...c, headerMenu: columnMenu})),
     columnDefaults: {headerFilterPlaceholder: 'фильтр…', tooltip: true},
     selectableRows: true,
+    rowContextMenu: [
+      {label: 'Добавить в корзину…', action: (e, row) => window.Cart.addPart(row.getData())},
+      {label: 'Открыть карточку детали', action: (e, row) => openCard(row.getData())},
+    ],
     placeholder: 'Ничего не найдено',
     groupStartOpen: true,
     groupHeader: (value, count, data, group) => {
@@ -82,9 +86,13 @@
   }
 
   // Двойной клик по строке — карточка детали
-  table.on('rowDblClick', (e, row) => {
-    window.open(STOCK.partUrl.replace('/0/', '/' + row.getData().id + '/'), '_blank');
-  });
+  // Двойной клик по строке — добавить деталь в корзину (через окно «Поиск покупателя»).
+  // Карточка детали открывается из меню по правой кнопке мыши.
+  function openCard(data) {
+    window.open(STOCK.partUrl.replace('/0/', '/' + data.id + '/'), '_blank');
+  }
+  table.on('rowDblClick', (e, row) => window.Cart.addPart(row.getData()));
+  table.on('rowContext', (e) => e.preventDefault());
 
   // ---------- Группировка ----------
   groupable.forEach(c => {

@@ -6,4 +6,5 @@ urlpatterns = [
     path('', RedirectView.as_view(pattern_name='stock', permanent=False)),
     path('admin/', admin.site.urls),
     path('', include('parts.urls')),
+    path('', include('sales.urls')),
 ]

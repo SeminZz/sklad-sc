@@ -122,5 +122,20 @@ class Command(BaseCommand):
             if (i + 1) % 1000 == 0:
                 self.stdout.write(f'  создано {i + 1} из {n}')
 
+        # Несколько выдуманных покупателей, чтобы было кого искать в окне «Поиск покупателя»
+        from sales.models import Customer, phone_digits
+        demo_customers = [
+            dict(last_name='Иванов', first_name='Пётр', middle_name='Сергеевич', phone='+7 900 000-00-01', city='Тестовск'),
+            dict(last_name='Смирнова', first_name='Анна', phone='8 900 000-00-02', email='anna@example.com'),
+            dict(last_name='Кузнецов', first_name='Олег', phone='+7 900 000 00 03', discount=5),
+            dict(kind=Customer.Kind.COMPANY, company_name='ООО «Пример Авто»', inn='0000000000',
+                 phone='+7 900 000-00-04', discount=10),
+            dict(kind=Customer.Kind.IP, company_name='ИП Петров', last_name='Петров', first_name='Илья',
+                 phone='+7 900 000-00-05'),
+        ]
+        for data in demo_customers:
+            if not Customer.objects.filter(phone_digits=phone_digits(data['phone'])).exists():
+                Customer.objects.create(**data)
+
         self.stdout.write(self.style.SUCCESS(f'Готово: {n} деталей, {len(warehouses)} склада, '
                                              f'{len(all_categories)} категорий в справочнике, {len(models)} моделей.'))

@@ -3,6 +3,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
+from django.utils.timezone import localtime
 
 from warehouse.models import Warehouse
 
@@ -152,7 +153,7 @@ def stock_api(request):
         'min_price': float(r['min_price']) if r['min_price'] is not None else None,
         'status': r['status'],
         'status_label': status_labels.get(r['status'], r['status']),
-        'created': r['created_at'].strftime('%d.%m.%Y') if r['created_at'] else '',
+        'created': localtime(r['created_at']).strftime('%d.%m.%Y') if r['created_at'] else '',
     } for r in rows]
 
     return JsonResponse({'total': total, 'shown': len(data), 'rows': data})
