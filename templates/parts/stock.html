@@ -27,12 +27,14 @@
       </datalist>
     </label>
     <label>Марка
-      <select name="brand" id="f-brand"><option value="">Все</option>
-        {% for b in brands %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+      <select name="brand" id="f-brand"><option value="">Все марки</option>
+        {% for group, items in brand_groups %}{% if group %}<optgroup label="{{ group }}">{% endif %}
+          {% for id, label in items %}<option value="{{ id }}">{{ label }}</option>{% endfor %}
+        {% if group %}</optgroup>{% endif %}{% endfor %}
       </select>
     </label>
     <label>Модель
-      <select name="car_model" id="f-model"><option value="">Все</option></select>
+      <select name="car_model" id="f-model" disabled><option value="">Сначала выберите марку</option></select>
     </label>
     <label>ДВС / Маркировка / OEM
       <input name="engine" placeholder="например N47">
@@ -66,7 +68,6 @@
 </div>
 
 <div id="grid"></div>
-{{ car_models|json_script:"car-models" }}
 {% endblock %}
 
 {% block scripts %}
@@ -75,7 +76,9 @@
 window.STOCK = {
   apiUrl: "{% url 'stock_api' %}",
   partUrl: "{{ admin_part_url }}",
+  modelsUrl: "{{ models_api_url }}",
 };
 </script>
+<script src="{% static 'js/brand_model.js' %}"></script>
 <script src="{% static 'js/stock.js' %}"></script>
 {% endblock %}

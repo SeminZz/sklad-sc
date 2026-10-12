@@ -19,6 +19,10 @@ class Category(models.Model):
 
 class Brand(models.Model):
     name = models.CharField('марка', max_length=60, unique=True)
+    name_ru = models.CharField('марка по-русски', max_length=60, blank=True)
+    country = models.CharField('страна', max_length=60, blank=True)
+    is_popular = models.BooleanField('популярная', default=False,
+                                     help_text='Популярные марки показываются в списках первыми.')
 
     class Meta:
         verbose_name = 'марка авто'
@@ -32,6 +36,9 @@ class Brand(models.Model):
 class CarModel(models.Model):
     brand = models.ForeignKey(Brand, verbose_name='марка', on_delete=models.PROTECT, related_name='models')
     name = models.CharField('модель', max_length=80)
+    name_ru = models.CharField('модель по-русски', max_length=80, blank=True)
+    year_from = models.PositiveSmallIntegerField('выпуск с', null=True, blank=True)
+    year_to = models.PositiveSmallIntegerField('выпуск по', null=True, blank=True)
 
     class Meta:
         verbose_name = 'модель авто'
@@ -73,6 +80,8 @@ class Part(TimeStamped):
                               related_name='parts')
     car_model = models.ForeignKey(CarModel, verbose_name='модель', on_delete=models.PROTECT, null=True, blank=True,
                                   related_name='parts')
+    generation = models.CharField('поколение / кузов', max_length=40, blank=True,
+                                  help_text='Например II, C, E90, XV40.')
     year = models.PositiveSmallIntegerField('год', null=True, blank=True)
     engine_code = models.CharField('ДВС / маркировка', max_length=60, blank=True)
     oem = models.CharField('OEM-номер', max_length=60, blank=True)
@@ -119,6 +128,7 @@ class Part(TimeStamped):
             self.brand_id = self.car_model.brand_id
         self.oem = (self.oem or '').strip().upper()
         self.engine_code = (self.engine_code or '').strip().upper()
+        self.generation = (self.generation or '').strip()
         super().save(*args, **kwargs)
         if not self.barcode:
             self.barcode = f'P{self.pk:07d}'
