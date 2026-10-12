@@ -36,6 +36,22 @@ def _int(value):
         return None
 
 
+def find_category_id(value):
+    """Номер категории по номеру или названию (регистр не важен). Нет такой — None."""
+    if value.isdigit():
+        return int(value)
+    found = Category.objects.filter(name=value).values_list('id', flat=True).first()
+    if found:
+        return found
+    # SQLite не умеет сравнивать кириллицу без учёта регистра, поэтому сверяем в Python:
+    # справочник небольшой (около тысячи строк).
+    wanted = value.lower()
+    for pk, name in Category.objects.values_list('id', 'name'):
+        if name.lower() == wanted:
+            return pk
+    return None
+
+
 def filter_parts(params):
     qs = Part.objects.all()
 
@@ -47,7 +63,12 @@ def filter_parts(params):
             cond |= Q(pk=int(q))
         qs = qs.filter(cond)
 
-    for param, field in (('category', 'category_id'), ('brand', 'brand_id'),
+    # Категория приходит названием (поле с подсказками) или номером
+    category = ' '.join((params.get('category') or '').split())
+    if category:
+        qs = qs.filter(category_id=find_category_id(category))
+
+    for param, field in (('brand', 'brand_id'),
                          ('car_model', 'car_model_id'), ('warehouse', 'warehouse_id')):
         value = _int(params.get(param))
         if value:

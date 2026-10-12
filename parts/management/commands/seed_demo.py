@@ -14,8 +14,15 @@ from django.db import transaction
 from parts.models import Brand, CarModel, Category, Part
 from warehouse.models import Cell, Warehouse
 
-CATEGORIES = ['Генератор', 'Стартер', 'Компрессор кондиционера', 'ТНВД', 'Турбина', 'Рулевая рейка',
-              'Насос ГУР', 'Блок ABS', 'Форсунка', 'Дроссельная заслонка', 'Коробка передач', 'Фара']
+# Самые ходовые категории: на них приходится большая часть тестовых деталей,
+# чтобы группировка выглядела как в жизни. Остальные берутся из справочника случайно.
+POPULAR_CATEGORIES = [
+    'Генератор', 'Стартер', 'Компрессор кондиционера', 'ТНВД', 'Турбина', 'Рейка рулевая',
+    'Насос гидроусилителя руля (ГУР)', 'Блок ABS', 'Форсунка топливная', 'Заслонка дроссельная',
+    'КПП автомат (автоматическая коробка)', 'Фара левая', 'Фара правая', 'Блок управления двигателем',
+    'Двигатель (ДВС)', 'Зеркало наружное левое', 'Бампер передний', 'Дверь передняя левая',
+    'Радиатор основной', 'Суппорт передний левый',
+]
 
 CARS = {
     'Ford': ['Focus 2', 'Focus 3', 'Fiesta 5', 'Mondeo 4', 'Kuga'],
@@ -70,7 +77,11 @@ class Command(BaseCommand):
                             Cell.objects.create(warehouse=wh, floor=1, zone=zone, rack=str(rack), shelf=str(shelf))
             cells[wh.pk] = list(wh.cells.all())
 
-        categories = [Category.objects.get_or_create(name=n)[0] for n in CATEGORIES]
+        all_categories = list(Category.objects.all())
+        if not all_categories:
+            self.stderr.write('Справочник категорий пуст. Сначала выполните: python manage.py migrate')
+            return
+        popular = [c for c in all_categories if c.name in POPULAR_CATEGORIES] or all_categories
         models = []
         for brand_name, model_names in CARS.items():
             brand, _ = Brand.objects.get_or_create(name=brand_name)
@@ -90,7 +101,7 @@ class Command(BaseCommand):
             car = rnd.choice(models)
             price = Decimal(rnd.randrange(1500, 60000, 50))
             Part.objects.create(
-                category=rnd.choice(categories),
+                category=rnd.choice(popular if rnd.random() < 0.85 else all_categories),
                 brand_id=car.brand_id,
                 car_model=car,
                 year=rnd.randint(1995, 2022),
@@ -107,4 +118,4 @@ class Command(BaseCommand):
                 self.stdout.write(f'  создано {i + 1} из {n}')
 
         self.stdout.write(self.style.SUCCESS(f'Готово: {n} деталей, {len(warehouses)} склада, '
-                                             f'{len(categories)} категорий, {len(models)} моделей.'))
+                                             f'{len(all_categories)} категорий в справочнике, {len(models)} моделей.'))

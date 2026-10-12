@@ -51,6 +51,7 @@ form.inline { display: inline; }
   font: inherit; height: 26px; border: 1px solid #9ca3af; border-radius: 2px; background: #fff; padding: 0 6px;
 }
 .filters select { min-width: 150px; }
+.filters input.wide { width: 320px; }
 .filters .search { flex: 1; min-width: 260px; font-size: 14px; }
 button { cursor: pointer; background: linear-gradient(#fff, #e5e7eb); }
 button:hover { border-color: var(--accent); }

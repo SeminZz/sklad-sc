@@ -21,9 +21,10 @@
   </div>
   <div class="row">
     <label>Категория
-      <select name="category"><option value="">Все категории</option>
-        {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
-      </select>
+      <input name="category" list="categories-list" class="wide" placeholder="Все категории — начните вводить">
+      <datalist id="categories-list">
+        {% for c in categories %}<option value="{{ c.name }}">{% endfor %}
+      </datalist>
     </label>
     <label>Марка
       <select name="brand" id="f-brand"><option value="">Все</option>
