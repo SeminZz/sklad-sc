@@ -6,7 +6,7 @@ from warehouse.models import Cell, TimeStamped, Warehouse
 
 
 class Category(models.Model):
-    name = models.CharField('название', max_length=100, unique=True)
+    name = models.CharField('название', max_length=255, unique=True)
 
     class Meta:
         verbose_name = 'категория'

@@ -13,7 +13,7 @@ class PartModelTests(TestCase):
     def setUp(self):
         self.wh = Warehouse.objects.create(name='Склад', code='S1')
         self.other_wh = Warehouse.objects.create(name='Другой', code='S2')
-        self.cat = Category.objects.create(name='Генератор')
+        self.cat, _ = Category.objects.get_or_create(name='Генератор')
         self.ford = Brand.objects.create(name='Ford')
         self.opel = Brand.objects.create(name='Opel')
         self.focus = CarModel.objects.create(brand=self.ford, name='Focus 2')
@@ -77,9 +77,20 @@ class StockPageTests(TestCase):
         self.assertEqual(data['total'], Part.objects.filter(category=cat).count())
         self.assertTrue(all(r['category'] == 'Генератор' for r in data['rows']))
 
+        # из поля с подсказками категория приходит названием, регистр не важен
+        data = self.client.get(reverse('stock_api'), {'category': 'генератор', 'status': 'all'}).json()
+        self.assertEqual(data['total'], Part.objects.filter(category=cat).count())
+
+
     def test_limit(self):
         data = self.client.get(reverse('stock_api'), {'limit': 500, 'status': 'all'}).json()
         self.assertEqual(data['total'], 300)
         self.assertEqual(data['shown'], 300)
         data = self.client.get(reverse('stock_api'), {'limit': 1, 'status': 'all'}).json()
         self.assertEqual(data['shown'], 1)
+
+
+class CategoriesLoadedTests(TestCase):
+    def test_full_list_loaded_by_migration(self):
+        self.assertGreaterEqual(Category.objects.count(), 809)
+        self.assertTrue(Category.objects.filter(name='Фильтр паров топлива').exists())
