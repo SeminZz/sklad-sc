@@ -38,7 +38,7 @@ class WarehouseAdmin(admin.ModelAdmin):
 class CellAdmin(admin.ModelAdmin):
     list_display = ('address', 'warehouse', 'cell_type', 'capacity', 'max_weight_kg', 'barcode', 'is_active')
     list_filter = ('warehouse', 'cell_type', 'is_active', 'floor', 'zone')
-    search_fields = ('address', 'barcode', 'rack', 'notes')
+    search_fields = ('address', 'barcode', 'rack', 'notes', 'warehouse__code')
     list_select_related = ('warehouse',)
     list_per_page = 100
     fieldsets = (

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Склад — остатки{% endblock %}
+{% block tab_stock %}active{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'vendor/tabulator-6.5.3/tabulator_simple.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<form id="filters" class="filters" autocomplete="off" onsubmit="return false">
+  <div class="row">
+    <input id="f-q" name="q" class="search" placeholder="Бирка, номер, OEM, ДВС… (можно сканером)" autofocus>
+    <button type="button" id="btn-search" class="primary">Найти</button>
+    <button type="button" id="btn-clear">Очистить</button>
+    <span class="spacer"></span>
+    <label>Показывать
+      <select name="limit">
+        {% for l in limits %}<option value="{{ l }}" {% if l == default_limit %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+    </label>
+  </div>
+  <div class="row">
+    <label>Категория
+      <select name="category"><option value="">Все категории</option>
+        {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Марка
+      <select name="brand" id="f-brand"><option value="">Все</option>
+        {% for b in brands %}<option value="{{ b.id }}">{{ b.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Модель
+      <select name="car_model" id="f-model"><option value="">Все</option></select>
+    </label>
+    <label>ДВС / Маркировка / OEM
+      <input name="engine" placeholder="например N47">
+    </label>
+    <label>Склад
+      <select name="warehouse"><option value="">Все склады</option>
+        {% for w in warehouses %}<option value="{{ w.id }}">{{ w.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Статус
+      <select name="status">
+        <option value="active" selected>В наличии</option>
+        <option value="all">Все, включая проданные</option>
+        {% for value, label in statuses %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+  </div>
+</form>
+
+<div class="infobar">
+  <span>Остатки: <b id="total">—</b></span>
+  <span id="shown-note" class="muted"></span>
+  <span class="spacer"></span>
+  <button type="button" id="btn-csv">Скачать в Excel (CSV)</button>
+</div>
+
+<div id="group-panel" class="group-panel">
+  <span class="hint">Перетяните сюда заголовок колонки для группировки</span>
+  <span id="group-chips"></span>
+  <select id="group-add"><option value="">+ группировать по…</option></select>
+</div>
+
+<div id="grid"></div>
+{{ car_models|json_script:"car-models" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'vendor/tabulator-6.5.3/tabulator.min.js' %}"></script>
+<script>
+window.STOCK = {
+  apiUrl: "{% url 'stock_api' %}",
+  partUrl: "{{ admin_part_url }}",
+};
+</script>
+<script src="{% static 'js/stock.js' %}"></script>
+{% endblock %}
