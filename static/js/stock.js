@@ -17,9 +17,20 @@
   // ---------- Таблица ----------
   const money = {thousand: ' ', decimal: ',', symbol: '', precision: 2};
 
+  const CART_ICON = '<button type="button" class="cart-btn" title="Добавить в корзину" aria-label="Добавить в корзину">' +
+    '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M3 4h2l2.4 10.2a1.5 1.5 0 0 0 1.5 1.1h8.4' +
+    'a1.5 1.5 0 0 0 1.4-1l2-6.3H6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+    'stroke-linejoin="round"/><circle cx="9.5" cy="19.5" r="1.4" fill="currentColor"/><circle cx="17" cy="19.5" r="1.4" ' +
+    'fill="currentColor"/></svg></button>';
+
   const columns = [
     {title: 'Id', field: 'id', width: 80, hozAlign: 'right', sorter: 'number'},
     {title: 'Бирка', field: 'barcode', width: 115, cssClass: 'col-barcode', headerFilter: 'input'},
+    // Кнопка «В корзину»: открывает окно «Поиск покупателя» для этой детали
+    {title: '', field: '_cart', width: 38, minWidth: 38, headerSort: false, hozAlign: 'center',
+     resizable: false, download: false, cssClass: 'col-cart', tooltip: false,
+     formatter: () => CART_ICON,
+     cellClick: (e, cell) => { e.stopPropagation(); window.Cart.addPart(cell.getRow().getData()); }},
     {title: 'Склад', field: 'warehouse', width: 150, headerFilter: 'input'},
     {title: 'Ячейка', field: 'cell', width: 125, headerFilter: 'input'},
     {title: 'Категория', field: 'category', width: 140, headerFilter: 'input'},
@@ -38,13 +49,13 @@
      bottomCalcFormatterParams: money},
     {title: 'Создано', field: 'created', width: 95},
   ];
-  const groupable = columns.filter(c => !['id', 'barcode', 'price', 'min_price'].includes(c.field));
+  const groupable = columns.filter(c => !['id', 'barcode', '_cart', 'price', 'min_price'].includes(c.field));
 
   const table = new Tabulator('#grid', {
     height: '100%',
     layout: 'fitData',
     index: 'id',
-    columns: columns.map(c => ({...c, headerMenu: columnMenu})),
+    columns: columns.map(c => (c.field === '_cart' ? c : {...c, headerMenu: columnMenu})),
     columnDefaults: {headerFilterPlaceholder: 'фильтр…', tooltip: true},
     selectableRows: true,
     rowContextMenu: [
