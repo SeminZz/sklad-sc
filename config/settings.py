@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     # Наши приложения
     'warehouse',
     'parts',
+    'sales',
 ]
 
 MIDDLEWARE = [

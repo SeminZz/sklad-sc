@@ -68,6 +68,96 @@
 </div>
 
 <div id="grid"></div>
+
+<section id="cart-panel" class="cart-panel" aria-label="Корзины">
+  <div class="cart-tabs" id="cart-tabs">
+    <span class="cart-empty-hint">Корзин пока нет. Дважды щёлкните по детали, чтобы добавить её покупателю.</span>
+  </div>
+  <div class="cart-body" id="cart-body" hidden>
+    <div class="cart-customer" id="cart-customer"></div>
+    <div class="cart-table-wrap">
+      <table class="cart-table">
+        <thead><tr>
+          <th>Бирка</th><th>Категория</th><th>Марка</th><th>Модель</th><th>Поколение</th><th>Год</th>
+          <th>Склад</th><th>Ячейка</th><th class="num">Цена</th><th></th>
+        </tr></thead>
+        <tbody id="cart-items"></tbody>
+      </table>
+    </div>
+    <div class="cart-side">
+      <div class="cart-total">Итого: <b id="cart-total">0,00</b></div>
+      <div class="cart-total muted" id="cart-total-discount"></div>
+      <button type="button" id="cart-clear">Очистить</button>
+      <button type="button" disabled title="Следующий этап">Создать счёт</button>
+    </div>
+  </div>
+</section>
+
+<dialog id="dlg-customer" class="dlg dlg-wide" aria-labelledby="dlg-customer-title">
+  <form method="dialog" class="dlg-head">
+    <h2 id="dlg-customer-title">Поиск покупателя</h2>
+    <button class="dlg-x" value="cancel" aria-label="Закрыть">×</button>
+  </form>
+  <div class="dlg-part" id="dlg-customer-part"></div>
+  <div class="dlg-search">
+    <label>Поиск: ФИО, телефон, email, город или VIN
+      <input id="customer-q" autocomplete="off" placeholder="например Иванов или 978 123 45 67">
+    </label>
+    <button type="button" id="customer-to-current" class="primary" hidden></button>
+  </div>
+  <div class="dlg-table-wrap">
+    <table class="pick-table">
+      <thead><tr>
+        <th>Как обращаться</th><th>Тип собственности</th><th>Телефон</th><th>Email</th>
+        <th>Адрес</th><th>Дата создания</th><th class="num">Скидка</th>
+      </tr></thead>
+      <tbody id="customer-results"></tbody>
+    </table>
+    <p class="dlg-note" id="customer-note">Начните вводить телефон или фамилию.</p>
+  </div>
+  <div class="dlg-foot">
+    <span>Количество: <b id="customer-count">0</b></span>
+    <span class="spacer"></span>
+    <button type="button" id="customer-pick" class="primary" disabled>Выбрать и добавить</button>
+    <button type="button" id="customer-new">Создать покупателя</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-create" class="dlg" aria-labelledby="dlg-create-title">
+  <form method="dialog" class="dlg-head">
+    <h2 id="dlg-create-title">Создание покупателя</h2>
+    <button class="dlg-x" value="cancel" aria-label="Закрыть">×</button>
+  </form>
+  <form id="customer-form" class="cust-form" novalidate>
+    <label class="span3">Тип собственности <select name="kind" id="cf-kind"></select></label>
+    <label class="span2 company">Название организации <input name="company_name" id="cf-company_name"></label>
+    <label class="company">ИНН <input name="inn" id="cf-inn" inputmode="numeric"></label>
+    <label>Фамилия <input name="last_name" id="cf-last_name"></label>
+    <label>Имя <input name="first_name" id="cf-first_name"></label>
+    <label>Отчество <input name="middle_name" id="cf-middle_name"></label>
+    <label>Телефон <input name="phone" id="cf-phone" inputmode="tel"></label>
+    <label>Email <input name="email" id="cf-email" type="email"></label>
+    <label>Пол <select name="gender" id="cf-gender"></select></label>
+    <label>Страна <input name="country" id="cf-country" value="Россия"></label>
+    <label>Область <input name="region" id="cf-region"></label>
+    <label>Город <input name="city" id="cf-city"></label>
+    <label>Улица <input name="street" id="cf-street"></label>
+    <label class="short-row">Дом <input name="house" id="cf-house"></label>
+    <label class="short-row">Кв. <input name="flat" id="cf-flat"></label>
+    <label>Индекс <input name="postcode" id="cf-postcode" inputmode="numeric"></label>
+    <label class="span2">VIN-код <input name="vin" id="cf-vin" maxlength="17"></label>
+    <label class="span2">Ответственный менеджер <select name="manager" id="cf-manager"></select></label>
+    <label>Скидка, % <input name="discount" id="cf-discount" type="number" min="0" max="100" step="0.5" value="0"></label>
+    <p class="form-error span3" id="cf-errors" hidden></p>
+    <div class="span3 dlg-foot">
+      <span class="spacer"></span>
+      <button type="button" id="cf-cancel">Отмена</button>
+      <button type="submit" class="primary">Создать и добавить деталь</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" hidden></div>
 {% endblock %}
 
 {% block scripts %}
@@ -78,7 +168,16 @@ window.STOCK = {
   partUrl: "{{ admin_part_url }}",
   modelsUrl: "{{ models_api_url }}",
 };
+window.SALES = {
+  customersUrl: "{% url 'customers_search' %}",
+  optionsUrl: "{% url 'customer_form_options' %}",
+  createUrl: "{% url 'customer_create' %}",
+  cartsUrl: "{% url 'carts_list' %}",
+  addUrl: "{% url 'cart_add' %}",
+  cartUrl: "/sales/api/carts/0/",
+};
 </script>
 <script src="{% static 'js/brand_model.js' %}"></script>
+<script src="{% static 'js/cart.js' %}"></script>
 <script src="{% static 'js/stock.js' %}"></script>
 {% endblock %}
